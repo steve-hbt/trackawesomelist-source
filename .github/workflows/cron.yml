@@ -11,7 +11,7 @@ on:
         required: false
   push:
     branches:
-      - main
+      - ghpages-testing
     paths-ignore:
       - "**.md"
   schedule:
