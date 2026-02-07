@@ -362,13 +362,26 @@ export default async function buildMarkdown(options: RunOptions) {
       .filter((sourceIdentifier) => {
         const sourceConfig = sourcesConfig[sourceIdentifier];
         const sourceMeta = dbSources[sourceIdentifier];
+        
+        // Filtrer les repos sans métadonnées (skippés)
+        if (!sourceMeta || !sourceMeta.files) {
+          log.warn(`Skipping ${sourceIdentifier} from index: no metadata`);
+          return false;
+        }
+        
         try {
           const indexFileConfig = getIndexFileConfig(sourceConfig.files);
           const indexFileMeta = sourceMeta.files[indexFileConfig.filepath];
+          
           // Ne garder que les repos avec des métadonnées valides
-          return indexFileMeta && indexFileMeta.updated_at;
+          if (!indexFileMeta || !indexFileMeta.updated_at) {
+            log.warn(`Skipping ${sourceIdentifier} from index: missing file metadata`);
+            return false;
+          }
+          
+          return true;
         } catch (e) {
-          log.warn(`Skipping ${sourceIdentifier} from sorting: missing metadata`);
+          log.warn(`Skipping ${sourceIdentifier} from index: ${e.message}`);
           return false;
         }
       })
@@ -534,7 +547,23 @@ export default async function buildMarkdown(options: RunOptions) {
         }
         return sourceConfig.category;
       };
-      const listGroups = groupBy(sourcesKeys, groupByCategory);
+
+      const validSourcesKeys = sourcesKeys.filter((sourceIdentifier) => {
+        const sourceMeta = dbSources[sourceIdentifier];
+        if (!sourceMeta || !sourceMeta.files) {
+          return false;
+        }
+        try {
+          const sourceConfig = sourcesConfig[sourceIdentifier];
+          const indexFileConfig = getIndexFileConfig(sourceConfig.files);
+          const indexFileMeta = sourceMeta.files[indexFileConfig.filepath];
+          return indexFileMeta && indexFileMeta.updated_at;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      const listGroups = groupBy(validSourcesKeys, groupByCategory);
 
       const list: List[] = Object.keys(listGroups).sort().map((category) => {
         const sourceIdentifiers = listGroups[category];
