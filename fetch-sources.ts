@@ -253,6 +253,7 @@ export default async function (options: RunOptions) {
             ...meta,
           };
         }
+        }
 
         dbMeta.sources[sourceIdentifier].files = dbFiles;
         dbMeta.sources[sourceIdentifier].updated_at =
