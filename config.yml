@@ -2271,7 +2271,7 @@ sources:
         options:
           type: table
 
-  hobbyquaker/awesome-mqtt:
+  awesome-mqtt/awesome-mqtt:
     category: Miscellaneous
     default_branch: master
     files:
