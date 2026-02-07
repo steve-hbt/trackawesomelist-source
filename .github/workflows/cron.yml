@@ -102,6 +102,17 @@ jobs:
           ls -la prod-db/public/ || true
           ls -la prod-db/public/*/  2>/dev/null | head -20 || true
 
+      - name: Debug - Check specific paths
+        run: |
+          echo "=== Checking awesome-foss structure ==="
+          ls -R prod-db/public/awesome-foss/ || echo "awesome-foss directory not found"
+          echo ""
+          echo "=== Looking for awesome-sysadmin ==="
+          find prod-db/public -path "*awesome-foss*awesome-sysadmin*" -type f
+          echo ""
+          echo "=== All awesome-foss index.html files ==="
+          find prod-db/public/awesome-foss -name "index.html"
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
