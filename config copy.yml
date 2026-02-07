@@ -323,7 +323,7 @@ sources:
     files:
       README.md:
         index: true
-  serpro69/awesome-leading-and-managing:
+  LappleApple/awesome-leading-and-managing:
     skip: true
     category: Business
     default_branch: master
@@ -1012,7 +1012,7 @@ sources:
         index: true
   rothgar/awesome-tmux:
     category: Development Environment
-    default_branch: main
+    default_branch: master
     files:
       README.md:
         index: true
@@ -1917,6 +1917,13 @@ sources:
     files:
       README.md:
         index: true
+  shime/creative-commons-media:
+    skip: true
+    category: Media
+    default_branch: master
+    files:
+      README.md:
+        index: true
   brabadu/awesome-fonts:
     category: Media
     default_branch: master
@@ -2271,7 +2278,7 @@ sources:
         options:
           type: table
 
-  awesome-mqtt/awesome-mqtt:
+  hobbyquaker/awesome-mqtt:
     category: Miscellaneous
     default_branch: master
     files:
@@ -4131,6 +4138,13 @@ sources:
   0pandadev/awesome-windows:
     category: Platforms
     default_branch: main
+    files:
+      README.md:
+        index: true
+  Awesome-Windows/Awesome:
+    category: Platforms
+    default_branch: main
+    skip: true
     files:
       README.md:
         index: true

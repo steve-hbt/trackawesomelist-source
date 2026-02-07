@@ -1,4 +1,4 @@
-name: cron tasks
+name: Deploy to GitHub Pages
 on:
   repository_dispatch:
     types: [schedule]
@@ -11,79 +11,121 @@ on:
         required: false
   push:
     branches:
-      - main
+      - ghpages-testing
     paths-ignore:
       - "**.md"
   schedule:
     - cron: "9 */12 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    concurrency: build
+    
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - id: install-aws-cli
-        uses: unfor19/install-aws-cli-action@v1
-        with:
-          version: 2.22.35 # default
-          verbose: false # default
-          arch: amd64 # allowed values: amd64, arm64
       - uses: actions/setup-node@v3
         with:
           node-version: 22
           cache: "npm"
+
       - name: install wrangler
         run: npm install -g wrangler
+
       - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.29.4
+
       - uses: actions/cache@v3
         with:
           path: |
             ~/.deno
             ~/.cache/deno
           key: ${{ runner.os }}-deno-${{ hashFiles('**/*deps.ts') }}
-      - run: make prod-load
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{secrets.AWS_DEFAULT_REGION}}
-          AWS_ENDPOINT: ${{secrets.AWS_ENDPOINT}}
-      - run: make install
-      - run: "make prod-build args='${{ github.event.inputs.args }}'"
+
+      - name: Initialize database manually
+        run: |
+          mkdir -p ./prod-db
+          if [ ! -f ./prod-db/meta.json ]; then
+            cat db-meta-init.json > ./prod-db/meta.json
+            PROD=1 deno run -A init-db.ts
+          fi
+
+      - name: Install morsels
+        run: make install
+
+      - name: Build TrackAwesomeList
         id: source
         continue-on-error: true
+        run: "make prod-build args='${{ github.event.inputs.args }}'"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{secrets.AWS_DEFAULT_REGION}}
-          AWS_ENDPOINT: ${{secrets.AWS_ENDPOINT}}
           PUSH: 1
           DIST_REPO: ${{ secrets.DIST_REPO }}
           PERSONAL_GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
-      - name: upload files
-        run: make prod-upload
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{secrets.AWS_DEFAULT_REGION}}
-          AWS_ENDPOINT: ${{secrets.AWS_ENDPOINT}}
-      - name: upload temp folder to github action for debug
+
+      - name: Create .nojekyll file
+        run: touch prod-db/public/.nojekyll
+
+      - name: Upload temp folder to github action for debug
         uses: actions/upload-artifact@v4
         with:
           name: temp
           path: temp
           if-no-files-found: ignore
-      - name: throw if build failed
+
+      - name: Throw if build failed
         if: steps.source.outcome == 'failure'
         run: |
           echo "::error::prod-build failed"
           exit 1
-      - name: Publish pages
-        if: true
-        run: make prod-publish
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
-          CLOUDFLARE_API_TOKEN: ${{secrets.CLOUDFLARE_API_TOKEN}}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: prod-db/public
+
+      - name: Debug - List generated files
+        run: |
+          echo "=== Structure of prod-db/public ==="
+          find prod-db/public -type f -name "index.html" | head -20
+          echo "=== Sample directory ==="
+          ls -la prod-db/public/ || true
+          ls -la prod-db/public/*/  2>/dev/null | head -20 || true
+
+      - name: Debug - Check specific paths
+        run: |
+          echo "=== Checking awesome-foss structure ==="
+          ls -R prod-db/public/awesome-foss/ || echo "awesome-foss directory not found"
+          echo ""
+          echo "=== Looking for awesome-sysadmin ==="
+          find prod-db/public -path "*awesome-foss*awesome-sysadmin*" -type f
+          echo ""
+          echo "=== All awesome-foss index.html files ==="
+          find prod-db/public/awesome-foss -name "index.html"
+
+      - name: Remove CNAME for GitHub Pages subpath
+        run: |
+          rm -f prod-db/public/CNAME
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
