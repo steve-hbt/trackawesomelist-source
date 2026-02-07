@@ -32,7 +32,7 @@ jobs:
         env:
           PERSONAL_GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
         run: |
-          deno run -A tal.ts
+          deno run -A tal.ts --html --no-serve
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -42,7 +42,12 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
