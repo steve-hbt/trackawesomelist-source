@@ -4170,3 +4170,9 @@ sources:
     files:
       README.md:
         index: true
+  toolleeo/awesome-cli-apps-in-a-csv:
+    category: Development Environment
+    default_branch: master
+    files:
+      README.md:
+        index: true
