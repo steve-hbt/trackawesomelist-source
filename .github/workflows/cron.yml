@@ -53,8 +53,13 @@ jobs:
             ~/.cache/deno
           key: ${{ runner.os }}-deno-${{ hashFiles('**/*deps.ts') }}
 
-      - name: Initialize database
-        run: make prod-initdb
+      - name: Initialize database manually
+        run: |
+          mkdir -p ./prod-db
+          if [ ! -f ./prod-db/meta.json ]; then
+            cat db-meta-init.json > ./prod-db/meta.json
+            PROD=1 deno run -A init-db.ts
+          fi
 
       - name: Install morsels
         run: make install
