@@ -370,6 +370,15 @@ export default async function buildMarkdown(options: RunOptions) {
           const bIndexFileConfig = getIndexFileConfig(bSourceConfig.files);
           const aIndexFileMeta = aMeta.files[aIndexFileConfig.filepath];
           const bIndexFileMeta = bMeta.files[bIndexFileConfig.filepath];
+          
+          // **AJOUT: Vérifier si les métadonnées existent**
+          if (!aIndexFileMeta || !bIndexFileMeta) {
+            // Si l'un des deux n'a pas de métadonnées, le mettre à la fin
+            if (!aIndexFileMeta && !bIndexFileMeta) return 0;
+            if (!aIndexFileMeta) return 1;
+            if (!bIndexFileMeta) return -1;
+          }
+          
           const aUpdated = new Date(aIndexFileMeta.updated_at);
           const bUpdated = new Date(bIndexFileMeta.updated_at);
           const unmaintainedTime = new Date().getTime() -
