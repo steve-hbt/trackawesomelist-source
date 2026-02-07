@@ -113,6 +113,10 @@ jobs:
           echo "=== All awesome-foss index.html files ==="
           find prod-db/public/awesome-foss -name "index.html"
 
+      - name: Remove CNAME for GitHub Pages subpath
+        run: |
+          rm -f prod-db/public/CNAME
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
