@@ -23,6 +23,7 @@ import initItems from "./init-items.ts";
 import Github from "./adapters/github.ts";
 import { getItems, updateFile, updateItems } from "./db.ts";
 import renderMarkdown from "./render-markdown.ts";
+
 export default async function (options: RunOptions) {
   const force = options.forceFetch;
   const isRebuild = options.rebuild;
@@ -31,15 +32,17 @@ export default async function (options: RunOptions) {
   const sourcesMap = config.sources;
   let sourceIdentifiers = options.sourceIdentifiers;
   let isSpecificSource = true;
+
   if (sourceIdentifiers.length === 0) {
     isSpecificSource = false;
     sourceIdentifiers = Object.keys(sourcesMap);
   }
-  // limit
+
   const limit = options.limit;
   if (limit && limit > 0) {
     sourceIdentifiers = sourceIdentifiers.slice(0, limit);
   }
+
   const dbMeta = await getDbMeta();
   const dbIndex = await getDbIndex();
   const dbCachedStars = await getDbCachedStars();
@@ -51,91 +54,88 @@ export default async function (options: RunOptions) {
   try {
     for (const sourceIdentifier of sourceIdentifiers) {
       sourceIndex++;
-      log.info(
-        `[${sourceIndex}/${sourceIdentifiers.length}] Fetching source: ${sourceIdentifier}`,
-      );
-      const source = sourcesMap[sourceIdentifier];
-      if (source && source.skip) {
-        log.info(`source ${sourceIdentifier} is skipped`);
-        continue;
-      }
-      const files = source.files;
 
-      if (!dbSources[sourceIdentifier] || (isSpecificSource && isRebuild)) {
-        // need to init source
-        await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
-        continue;
-      } else {
-        // check is all files is init
-        const dbSource = dbSources[sourceIdentifier];
-        const dbFiles = dbSource.files;
-        const dbFileKeys = Object.keys(dbFiles);
-        const isAllFilesInit = Object.keys(files).every((file) => {
-          return dbFileKeys.includes(file);
-        });
-        if (!isAllFilesInit) {
-          // need to init source
-          await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
+      try {
+        log.info(
+          `[${sourceIndex}/${sourceIdentifiers.length}] Fetching source: ${sourceIdentifier}`,
+        );
+
+        const source = sourcesMap[sourceIdentifier];
+        if (source && source.skip) {
+          log.info(`source ${sourceIdentifier} is skipped`);
           continue;
         }
-      }
 
-      const dbSource = dbSources[sourceIdentifier];
-      const dbFiles = dbSource.files;
-      const api = new Github(source);
-      const fileKeys = Object.keys(files);
-      let fileIndex = 0;
-      // get file content and save it to raw data path
-      for (const file of fileKeys) {
-        fileIndex++;
-        const dbFileMeta = dbFiles[file];
-        let isRebuild = false;
+        const files = source.files;
 
-        if (dbFileMeta) {
-          const dbFileMetaUpdatedAt = new Date(dbFileMeta.updated_at);
-          if (dbFileMetaUpdatedAt.getTime() === 0) {
-            log.info(
-              `[${fileIndex}/${fileKeys.length}] ${source.identifier}/${file} is parsed failed, try to rebuild it.`,
-            );
-            isRebuild = true;
+        if (!dbSources[sourceIdentifier] || (isSpecificSource && isRebuild)) {
+          await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
+          continue;
+        } else {
+          const dbSource = dbSources[sourceIdentifier];
+          const dbFiles = dbSource.files;
+          const dbFileKeys = Object.keys(dbFiles);
+          const isAllFilesInit = Object.keys(files).every((file) =>
+            dbFileKeys.includes(file)
+          );
+          if (!isAllFilesInit) {
+            await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
+            continue;
           }
         }
 
-        if (!dbFileMeta) {
-          // reinit items
-          isRebuild = true;
-        }
+        const dbSource = dbSources[sourceIdentifier];
+        const dbFiles = dbSource.files;
+        const api = new Github(source);
+        const fileKeys = Object.keys(files);
+        let fileIndex = 0;
 
-        if (isRebuild) {
-          await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
-          break;
-        }
+        for (const file of fileKeys) {
+          fileIndex++;
+          const dbFileMeta = dbFiles[file];
+          let isRebuild = false;
 
-        // check is updated
+          if (dbFileMeta) {
+            const dbFileMetaUpdatedAt = new Date(dbFileMeta.updated_at);
+            if (dbFileMetaUpdatedAt.getTime() === 0) {
+              log.info(
+                `[${fileIndex}/${fileKeys.length}] ${source.identifier}/${file} is parsed failed, try to rebuild it.`,
+              );
+              isRebuild = true;
+            }
+          }
 
-        const dbFileUpdated = new Date(dbFileMeta.checked_at);
+          if (!dbFileMeta) {
+            isRebuild = true;
+          }
 
-        const now = new Date();
-        const diff = now.getTime() - dbFileUpdated.getTime();
+          if (isRebuild) {
+            await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
+            break;
+          }
 
-        if (!force && (diff / 1000 / 60 / 60) < file_min_updated_hours) {
-          // add max number function
-          // not updated
+          const dbFileUpdated = new Date(dbFileMeta.checked_at);
+          const now = new Date();
+          const diff = now.getTime() - dbFileUpdated.getTime();
+
+          if (!force && (diff / 1000 / 60 / 60) < file_min_updated_hours) {
+            log.info(
+              `${fileIndex}/${fileKeys.length}${sourceIdentifier}/${file} updated less than ${file_min_updated_hours} hours, skip`,
+            );
+            continue;
+          } else if (force) {
+            log.info(
+              `${sourceIdentifier}/${file} updated less than ${file_min_updated_hours} hours, force update`,
+            );
+          }
+
           log.info(
-            `${fileIndex}/${fileKeys.length}${sourceIdentifier}/${file} updated less than ${file_min_updated_hours} hours, skip`,
+            `${sourceIndex}/${sourceIdentifiers.length} try updating ${sourceIdentifier}/${file}`,
           );
-          continue;
-        } else if (force) {
-          log.info(
-            `${sourceIdentifier}/${file} updated less than ${file_min_updated_hours} hours, force update`,
-          );
-        }
-        log.info(
-          `${sourceIndex}/${sourceIdentifiers.length} try updating ${sourceIdentifier}/${file}`,
-        );
-        const content = await api.getConent(file, source.default_branch);
-        const contentSha1 = await sha1(content);
-        const dbFileSha1 = dbFileMeta.sha1;
+
+          const content = await api.getConent(file, source.default_branch);
+          const contentSha1 = await sha1(content);
+          const dbFileSha1 = dbFileMeta.sha1;
         log.debug(
           "dbFileSha1",
           dbFileSha1,
@@ -143,11 +143,11 @@ export default async function (options: RunOptions) {
           contentSha1,
         );
 
-        if (dbFileSha1 === contentSha1 && !force) {
+          if (dbFileSha1 === contentSha1 && !force) {
           log.info(`${file} is up to date, cause sha1 is same`);
           // update checked_at
-          dbFileMeta.checked_at = new Date().toISOString();
-          continue;
+            dbFileMeta.checked_at = new Date().toISOString();
+            continue;
         } else {
           let items: Record<string, Item> = {};
           try {
@@ -158,6 +158,7 @@ export default async function (options: RunOptions) {
             await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
             continue;
           }
+
           const fileInfo: FileInfo = {
             sourceConfig: source,
             filepath: file,
@@ -244,6 +245,7 @@ export default async function (options: RunOptions) {
           if (source.default_branch) {
             metaOverrides.default_branch = source.default_branch;
           }
+
           const meta = await api.getRepoMeta(metaOverrides);
           dbSource.meta = meta;
           dbMeta.sources[sourceIdentifier].meta = {
@@ -251,11 +253,23 @@ export default async function (options: RunOptions) {
             ...meta,
           };
         }
+
+        dbMeta.sources[sourceIdentifier].files = dbFiles;
+        dbMeta.sources[sourceIdentifier].updated_at =
+          new Date().toISOString();
+      } catch (err) {
+        log.error(
+          `[SKIP] Source ${sourceIdentifier} failed and was skipped`,
+        );
+        if (err instanceof Error) {
+          log.error(err.message);
+        } else {
+          log.error(String(err));
+        }
+        continue;
       }
-      dbMeta.sources[sourceIdentifier].files = dbFiles;
-      dbMeta.sources[sourceIdentifier].updated_at = new Date().toISOString();
     }
-    // write to dbMeta
+
     await writeDbMeta(dbMeta);
     await writeDbIndex(dbIndex);
     await writeDbCachedStars(dbCachedStars);
@@ -266,6 +280,7 @@ export default async function (options: RunOptions) {
     await writeDbCachedStars(dbCachedStars);
     throw e;
   }
+
   if (invalidFiles.length > 0) {
     log.error(`Some files is invalid, please check it manually`);
     log.error(invalidFiles);
