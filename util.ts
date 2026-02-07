@@ -253,6 +253,14 @@ export function isDev() {
 export function getDomain() {
   return isDev() ? DEV_DOMAIN : PROD_DOMAIN;
 }
+export function getBasePath(): string {
+  if (isDev()) {
+    return "";
+  } else {
+    // Pour GitHub Pages avec sous-chemin
+    return "/trackawesomelist-source";
+  }
+}
 export function isUseCache() {
   return true;
   // return Deno.env.get("CACHE") === "1";
@@ -736,12 +744,17 @@ export function pathnameToOverviewFilePath(pathname: string): string {
 }
 export function pathnameToFeedUrl(pathname: string, isDay: boolean): string {
   const domain = getDomain();
-  return domain + posixPath.join(pathname, isDay ? "" : "week", "rss.xml");
+  const basePath = getBasePath();
+  return domain + basePath + posixPath.join(pathname, isDay ? "" : "week", "rss.xml");
 }
 export function pathnameToUrl(pathname: string): string {
   const domain = getDomain();
-  const finalPathname = pathname.endsWith('/') ? pathname : pathname + '/';
-  return domain + finalPathname;
+  const basePath = getBasePath();
+  // S'assurer qu'il y a un slash final
+  if (!pathname.endsWith('/')) {
+    pathname = pathname + '/';
+  }
+  return domain + basePath + pathname;
 }
 export async function got(
   url: string,
