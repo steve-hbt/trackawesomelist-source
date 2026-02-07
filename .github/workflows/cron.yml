@@ -1,10 +1,21 @@
-# .github/workflows/pages.yml
 name: Deploy to GitHub Pages
-
 on:
-  push:
-    branches: [main]
+  repository_dispatch:
+    types: [schedule]
   workflow_dispatch:
+    inputs:
+      args:
+        default: ""
+        description: "args to build"
+        type: string
+        required: false
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  schedule:
+    - cron: "9 */12 * * *"
 
 permissions:
   contents: read
@@ -18,26 +29,65 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Check out repository code
+        uses: actions/checkout@v3
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v1
+      - uses: actions/setup-node@v3
         with:
-          deno-version: 1.37.2
+          node-version: 22
+          cache: "npm"
+
+      - name: install wrangler
+        run: npm install -g wrangler
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.29.4
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.deno
+            ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/*deps.ts') }}
+
+      - name: Initialize database
+        run: make prod-initdb
+
+      - name: Install morsels
+        run: make install
 
       - name: Build TrackAwesomeList
+        id: source
+        continue-on-error: true
+        run: "make prod-build args='${{ github.event.inputs.args }}'"
         env:
+          PUSH: 1
+          DIST_REPO: ${{ secrets.DIST_REPO }}
           PERSONAL_GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+
+      - name: Create .nojekyll file
+        run: touch prod-db/public/.nojekyll
+
+      - name: Upload temp folder to github action for debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: temp
+          path: temp
+          if-no-files-found: ignore
+
+      - name: Throw if build failed
+        if: steps.source.outcome == 'failure'
         run: |
-          deno run -A tal.ts --html --no-serve
+          echo "::error::prod-build failed"
+          exit 1
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: db/public
+          path: prod-db/public
 
   deploy:
     needs: build
