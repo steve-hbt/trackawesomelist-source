@@ -440,10 +440,10 @@ export default async function buildMarkdown(options: RunOptions) {
       return {
         order: index + 1,
         name: sourceFileConfig.name,
-        url: isDead ? null : pathnameToFilePath(sourceFileConfig.pathname),
+        url: isDead ? "" : pathnameToFilePath(sourceFileConfig.pathname), // MODIFIÉ : chaine vide au lieu de null
         star: isDead ? "N/A" : formatNumber(sourceMeta.stargazers_count),
         source_url: sourceConfig.url,
-        meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" },
+        meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" } as any,
         updated: isDead ? "Unavailable" : formatHumanTime(new Date(dbFileInfo.updated_at)),
         is_dead: isDead,
       };
@@ -532,26 +532,26 @@ export default async function buildMarkdown(options: RunOptions) {
 
       const list: List[] = Object.keys(listGroups).sort().map((category) => {
         const sourceIdentifiers = listGroups[category];
-        const items = sourceIdentifiers.map((sourceIdentifier: string) => {
-          const sourceConfig = sourcesConfig[sourceIdentifier];
-          const indexFileConfig = getIndexFileConfig(sourceConfig.files);
-          const sourceMeta = dbSources[sourceIdentifier]?.meta;
-          const dbFileInfo = dbSources[sourceIdentifier]?.files?.[indexFileConfig.filepath];
-          
-          // Détecter si le repo est mort
-          const isDead = !sourceMeta || !dbFileInfo;
-          
-          const item: ListItem = {
-            name: indexFileConfig.name,
-            meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" },
-            updated: isDead ? "Unavailable" : formatHumanTime(new Date(dbFileInfo?.updated_at ?? 0)),
-            url: isDead ? null : pathnameToFilePath(indexFileConfig.pathname),
-            star: isDead ? "N/A" : formatNumber(sourceMeta?.stargazers_count ?? 0),
-            source_url: sourceConfig.url,
-            is_dead: isDead, // AJOUT
-          };
-          return item;
-        }).sort((a: ListItem, b: ListItem) => a.name.localeCompare(b.name));
+          const items = sourceIdentifiers.map((sourceIdentifier: string) => {
+            const sourceConfig = sourcesConfig[sourceIdentifier];
+            const indexFileConfig = getIndexFileConfig(sourceConfig.files);
+            const sourceMeta = dbSources[sourceIdentifier]?.meta;
+            const dbFileInfo = dbSources[sourceIdentifier]?.files?.[indexFileConfig.filepath];
+            
+            // Détecter si le repo est mort
+            const isDead = !sourceMeta || !dbFileInfo;
+            
+            const item: ListItem = {
+              name: indexFileConfig.name,
+              meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" } as any,
+              updated: isDead ? "Unavailable" : formatHumanTime(new Date(dbFileInfo?.updated_at ?? 0)),
+              url: isDead ? "" : pathnameToFilePath(indexFileConfig.pathname), // MODIFIÉ : chaine vide au lieu de null
+              star: isDead ? "N/A" : formatNumber(sourceMeta?.stargazers_count ?? 0),
+              source_url: sourceConfig.url,
+              is_dead: isDead,
+            };
+            return item;
+          }).sort((a: ListItem, b: ListItem) => a.name.localeCompare(b.name));
         return {
           category,
           items,
