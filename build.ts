@@ -358,8 +358,21 @@ export default async function buildMarkdown(options: RunOptions) {
     // top 50 repos
     // https://bearblog.dev/discover/
     // Score = log10(U) + (S / D * 8600)
-    const sortedRepos = dbSourcesKeys.sort(
-      (aSourceIdentifier, bSourceIdentifier) => {
+    const sortedRepos = dbSourcesKeys
+      .filter((sourceIdentifier) => {
+        const sourceConfig = sourcesConfig[sourceIdentifier];
+        const sourceMeta = dbSources[sourceIdentifier];
+        try {
+          const indexFileConfig = getIndexFileConfig(sourceConfig.files);
+          const indexFileMeta = sourceMeta.files[indexFileConfig.filepath];
+          // Ne garder que les repos avec des métadonnées valides
+          return indexFileMeta && indexFileMeta.updated_at;
+        } catch (e) {
+          log.warn(`Skipping ${sourceIdentifier} from sorting: missing metadata`);
+          return false;
+        }
+      })
+      .sort((aSourceIdentifier, bSourceIdentifier) => {
         const sourceMeta = dbSources[aSourceIdentifier];
         const aMeta = dbSources[aSourceIdentifier];
         const bMeta = dbSources[bSourceIdentifier];
@@ -370,15 +383,6 @@ export default async function buildMarkdown(options: RunOptions) {
           const bIndexFileConfig = getIndexFileConfig(bSourceConfig.files);
           const aIndexFileMeta = aMeta.files[aIndexFileConfig.filepath];
           const bIndexFileMeta = bMeta.files[bIndexFileConfig.filepath];
-          
-          // **AJOUT: Vérifier si les métadonnées existent**
-          if (!aIndexFileMeta || !bIndexFileMeta) {
-            // Si l'un des deux n'a pas de métadonnées, le mettre à la fin
-            if (!aIndexFileMeta && !bIndexFileMeta) return 0;
-            if (!aIndexFileMeta) return 1;
-            if (!bIndexFileMeta) return -1;
-          }
-          
           const aUpdated = new Date(aIndexFileMeta.updated_at);
           const bUpdated = new Date(bIndexFileMeta.updated_at);
           const unmaintainedTime = new Date().getTime() -
