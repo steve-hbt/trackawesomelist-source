@@ -739,6 +739,7 @@ export function pathnameToFeedUrl(pathname: string, isDay: boolean): string {
   return domain + posixPath.join(pathname, isDay ? "" : "week", "rss.xml");
 }
 export function pathnameToUrl(pathname: string): string {
+  const domain = getDomain();
   const finalPathname = pathname.endsWith('/') ? pathname : pathname + '/';
   return domain + finalPathname;
 }
