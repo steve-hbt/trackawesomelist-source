@@ -323,7 +323,7 @@ sources:
     files:
       README.md:
         index: true
-  LappleApple/awesome-leading-and-managing:
+  serpro69/awesome-leading-and-managing:
     skip: true
     category: Business
     default_branch: master
