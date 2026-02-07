@@ -1917,13 +1917,6 @@ sources:
     files:
       README.md:
         index: true
-  shime/creative-commons-media:
-    skip: true
-    category: Media
-    default_branch: master
-    files:
-      README.md:
-        index: true
   brabadu/awesome-fonts:
     category: Media
     default_branch: master
