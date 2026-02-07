@@ -94,6 +94,14 @@ jobs:
         with:
           path: prod-db/public
 
+      - name: Debug - List generated files
+        run: |
+          echo "=== Structure of prod-db/public ==="
+          find prod-db/public -type f -name "index.html" | head -20
+          echo "=== Sample directory ==="
+          ls -la prod-db/public/ || true
+          ls -la prod-db/public/*/  2>/dev/null | head -20 || true
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
