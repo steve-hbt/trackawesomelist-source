@@ -4164,3 +4164,9 @@ sources:
     files:
       README.md:
         index: true
+  phillipthelen/awesome-build123d:
+    category: Miscellaneous
+    default_branch: main
+    files:
+      README.md:
+        index: true
