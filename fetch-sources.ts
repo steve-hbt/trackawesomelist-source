@@ -136,17 +136,25 @@ export default async function (options: RunOptions) {
           const content = await api.getConent(file, source.default_branch);
           const contentSha1 = await sha1(content);
           const dbFileSha1 = dbFileMeta.sha1;
+        log.debug(
+          "dbFileSha1",
+          dbFileSha1,
+          "latest file contentSha1",
+          contentSha1,
+        );
 
           if (dbFileSha1 === contentSha1 && !force) {
+          log.info(`${file} is up to date, cause sha1 is same`);
+          // update checked_at
             dbFileMeta.checked_at = new Date().toISOString();
             continue;
-          }
-
+        } else {
           let items: Record<string, Item> = {};
           try {
             items = await getItems(sourceIdentifier, file);
           } catch (e) {
             log.warn(`get items error`, e);
+            // try to reinit
             await initItems(source, options, dbMeta, dbIndex, dbCachedStars);
             continue;
           }
@@ -158,7 +166,7 @@ export default async function (options: RunOptions) {
           };
 
           const docItems = await parser(content, fileInfo, dbCachedStars);
-
+          //compare updated items
           const newItems: Record<string, Item> = {};
           let newCount = 0;
           let totalCount = 0;
@@ -167,17 +175,32 @@ export default async function (options: RunOptions) {
           for (const docItem of docItems) {
             const itemSha1 = await sha1(docItem.rawMarkdown);
             totalCount++;
-
+            // check markdown
             if (items[itemSha1]) {
+              // it's a old item,
+              // stay the same
               newItems[itemSha1] = {
-                ...items[itemSha1],
+                source_identifier: sourceIdentifier,
+                file,
+                sha1: itemSha1,
+                markdown: docItem.formatedMarkdown,
+                html: renderMarkdown(docItem.formatedMarkdown),
+                category: docItem.category,
+                category_html: renderMarkdown(docItem.category),
+                updated_at: items[itemSha1].updated_at,
                 checked_at: now.toISOString(),
+                updated_day: items[itemSha1].updated_day,
+                updated_week: items[itemSha1].updated_week,
               };
               if (new Date(items[itemSha1].updated_at) > fileUpdatedAt) {
                 fileUpdatedAt = new Date(items[itemSha1].updated_at);
               }
             } else {
               newCount++;
+              const now = new Date();
+              // yes
+              // this is a new item
+              // add it to items
               newItems[itemSha1] = {
                 source_identifier: sourceIdentifier,
                 file,
@@ -206,13 +229,17 @@ export default async function (options: RunOptions) {
             checked_at: now.toISOString(),
             sha1: contentSha1,
           };
-
+          log.info(
+            `${sourceIndex}/${sourceIdentifiers.length} ${sourceIdentifier}/${file} updated, ${newCount} new items, ${totalCount} total items`,
+          );
           if (totalCount < 10) {
             invalidFiles.push({
               sourceIdentifier,
               originalFilepath: file,
             });
           }
+          // if total count is 0, print it``
+          // also update repoMeta
 
           const metaOverrides: RepoMetaOverride = {};
           if (source.default_branch) {
@@ -247,6 +274,7 @@ export default async function (options: RunOptions) {
     await writeDbIndex(dbIndex);
     await writeDbCachedStars(dbCachedStars);
   } catch (e) {
+    // write to dbMeta
     await writeDbMeta(dbMeta);
     await writeDbIndex(dbIndex);
     await writeDbCachedStars(dbCachedStars);

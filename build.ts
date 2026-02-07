@@ -371,7 +371,7 @@ export default async function buildMarkdown(options: RunOptions) {
           const aIndexFileMeta = aMeta?.files?.[aIndexFileConfig.filepath];
           const bIndexFileMeta = bMeta?.files?.[bIndexFileConfig.filepath];
           
-          // Vérifier si les métadonnées existent
+          // Check if metadata exists
           if (!aIndexFileMeta || !bIndexFileMeta) {
             if (!aIndexFileMeta && !bIndexFileMeta) return 0;
             if (!aIndexFileMeta) return 1;
@@ -434,13 +434,13 @@ export default async function buildMarkdown(options: RunOptions) {
       const sourceMeta = dbSources[sourceIdentifier]?.meta;
       const dbFileInfo = dbSources[sourceIdentifier]?.files?.[sourceFileConfig.filepath];
       
-      // Détecter si le repo est mort (pas de métadonnées)
+      // Detect if repo is dead (no metadata)
       const isDead = !sourceMeta || !dbFileInfo;
 
       return {
         order: index + 1,
         name: sourceFileConfig.name,
-        url: isDead ? "" : pathnameToFilePath(sourceFileConfig.pathname), // MODIFIÉ : chaine vide au lieu de null
+        url: isDead ? "" : pathnameToFilePath(sourceFileConfig.pathname),
         star: isDead ? "N/A" : formatNumber(sourceMeta.stargazers_count),
         source_url: sourceConfig.url,
         meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" } as any,
@@ -538,14 +538,14 @@ export default async function buildMarkdown(options: RunOptions) {
             const sourceMeta = dbSources[sourceIdentifier]?.meta;
             const dbFileInfo = dbSources[sourceIdentifier]?.files?.[indexFileConfig.filepath];
             
-            // Détecter si le repo est mort
+            // Detect if the repo is dead
             const isDead = !sourceMeta || !dbFileInfo;
             
             const item: ListItem = {
               name: indexFileConfig.name,
               meta: sourceMeta || { description: "⚠️ This repository is currently unavailable" } as any,
               updated: isDead ? "Unavailable" : formatHumanTime(new Date(dbFileInfo?.updated_at ?? 0)),
-              url: isDead ? "" : pathnameToFilePath(indexFileConfig.pathname), // MODIFIÉ : chaine vide au lieu de null
+              url: isDead ? "" : pathnameToFilePath(indexFileConfig.pathname),
               star: isDead ? "N/A" : formatNumber(sourceMeta?.stargazers_count ?? 0),
               source_url: sourceConfig.url,
               is_dead: isDead,

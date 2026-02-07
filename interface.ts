@@ -122,7 +122,7 @@ export interface Source {
 export interface ListItem {
   name: string;
   updated: string;
-  url: string; // Remettre en string (vide si mort)
+  url: string;
   meta: RepoMeta;
   star: string;
   source_url: string;
