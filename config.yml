@@ -323,7 +323,7 @@ sources:
     files:
       README.md:
         index: true
-  LappleApple/awesome-leading-and-managing:
+  serpro69/awesome-leading-and-managing:
     skip: true
     category: Business
     default_branch: master
@@ -1012,7 +1012,7 @@ sources:
         index: true
   rothgar/awesome-tmux:
     category: Development Environment
-    default_branch: master
+    default_branch: main
     files:
       README.md:
         index: true
@@ -1049,6 +1049,12 @@ sources:
   viatsko/awesome-vscode:
     category: Editors
     default_branch: master
+    files:
+      README.md:
+        index: true
+  clutcher/awesome_jetbrains_plugins:
+    category: Editors
+    default_branch: main
     files:
       README.md:
         index: true
@@ -1917,13 +1923,6 @@ sources:
     files:
       README.md:
         index: true
-  shime/creative-commons-media:
-    skip: true
-    category: Media
-    default_branch: master
-    files:
-      README.md:
-        index: true
   brabadu/awesome-fonts:
     category: Media
     default_branch: master
@@ -2278,7 +2277,7 @@ sources:
         options:
           type: table
 
-  hobbyquaker/awesome-mqtt:
+  awesome-mqtt/awesome-mqtt:
     category: Miscellaneous
     default_branch: master
     files:
@@ -4141,13 +4140,6 @@ sources:
     files:
       README.md:
         index: true
-  Awesome-Windows/Awesome:
-    category: Platforms
-    default_branch: main
-    skip: true
-    files:
-      README.md:
-        index: true
   holistics/awesome-sql-playground:
     category: Data Engineering
     default_branch: main
@@ -4175,6 +4167,18 @@ sources:
   abordage/awesome-ai:
     category: Computer Science
     default_branch: main
+    files:
+      README.md:
+        index: true
+  phillipthelen/awesome-build123d:
+    category: Miscellaneous
+    default_branch: main
+    files:
+      README.md:
+        index: true
+  toolleeo/awesome-cli-apps-in-a-csv:
+    category: Development Environment
+    default_branch: master
     files:
       README.md:
         index: true
