@@ -126,6 +126,7 @@ export interface ListItem {
   meta: RepoMeta;
   star: string;
   source_url: string;
+  is_dead?: boolean;
 }
 export interface List {
   category: string;
