@@ -1600,6 +1600,12 @@ sources:
     files:
       README.md:
         index: true
+  karimould/awesome-js-tooling-in-rust:
+    category: Front-End Development
+    default_branch: main
+    files:
+      README.md:
+        index: true
   ellisonleao/magictools:
     category: Gaming
     default_branch: main
