@@ -1870,6 +1870,12 @@ sources:
     files:
       readme.md:
         index: true
+  omkar-foss/awesome-animal-care:
+    category: Health and Social Science
+    default_branch: main
+    files:
+      readme.md:
+        index: true
   karlhorky/learn-to-program:
     category: Learn
     default_branch: main
